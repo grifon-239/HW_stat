@@ -1,0 +1,158 @@
+---
+title: "Task1"
+output: html_document
+---
+  
+Загрузим наши данные:
+
+```{r}
+df <- read.table(file = 'study_fall2020_dataprog_creditcard.txt',
+                sep = ';',
+                header = TRUE)
+head(df)
+```
+
+
+## Информация о dataset:
+
+card: Factor. Was the application for a credit card accepted?
+
+
+reports: Number of major derogatory reports.
+
+
+age: Age in years plus twelfths of a year.
+
+
+income: Yearly income (in USD 10,000).
+
+
+share: Ratio of monthly credit card expenditure to yearly income.
+
+
+expenditure: Average monthly credit card expenditure.
+
+
+owner: Factor. Does the individual own their home?
+
+
+selfemp: Factor. Is the individual self-employed?
+
+
+dependents: Number of dependents.
+
+
+months: Months living at current address.
+
+
+majorcards: Number of major credit cards held.
+
+
+active: Number of active credit accounts.
+
+
+## Task:
+
+
+1. Write a dataframe with the following properties:
+
+
+- Let's consider 'today' is 2000-01-01. Convert amount of months applicant living at his/her current address to days
+
+
+```{r}
+#install.packages(lubridate)
+library(lubridate)
+
+now <- as.Date("2000-01-01")
+
+df$days <-as.numeric( (now %m+% months(df$months)) - now)
+
+head(df)
+```
+
+- Add column with income per family member (not the number of dependents!)
+
+
+inPerFamMem in USD 10,000
+
+```{r}
+df$inPerFamMem <- df$income/(df$dependents + 1)
+
+head(df)
+```
+
+- Define your own criterion of income level, and split data according to levels of this criterion
+
+
+Для определения собственного уровня дохода воспользуемся переменной inPerFamMem - доход на члена семьи. Выдвигаем предположение о равестве средних в двух группах по фактору "selfemp". Пользуемся критерием Вилкоксана о равенстве медиа, так как в данных наблюдаются выбросы.
+
+```{r}
+wilcox.test(df$inPerFamMem[df$selfemp == 'yes'], df$inPerFamMem[df$selfemp == 'no'])
+
+```
+
+У нас нету оснований отвергнуть гипотезу о равенстве медиан.
+
+
+Определим собственый критерий, как средний доход на члена семьи больше среднего и владение собственным домом:
+```{r}
+library(plyr)
+df$myCrit<- as.factor((df$inPerFamMem > mean(df$inPerFamMem)) & (df$owner == 'yes'))
+df$myCrit<-revalue(df$myCrit, c("FALSE"= 0, "TRUE"=1))
+head(df)
+
+```
+
+- Information about only self-employed people should be reported
+- Use colon as a field separator
+
+
+Выведем подсет данных в файл, где наш критерий = 1, selfemp = yes, разделитель - ":"
+```{r}
+df_ <- df[c(1:8,11:15)]
+head(df_)
+
+write.table(df_[which((df$myCrit == 1) & (df$selfemp == 'yes')),],
+            file = "myData.txt",
+            sep = ":")
+```
+
+
+2. Print some information about dataset (either to file or to standard output)
+
+
+- Average amount of dependents for people don't own their home.
+
+
+```{r}
+mean(df$dependents[df$owner == "no"])
+```
+
+
+- Average age in each income groups (use grouping variable defined in 1.)
+```{r}
+aggregate(x = df$age,                
+          by = list(df$myCrit),              
+          FUN = mean)
+```
+
+
+- Top 5 youngest and eldest people, whose application was declined
+
+
+```{r}
+require(data.table)
+d <- data.table(df, key="age")
+d[d$card == 'no', head(.SD, 5)]
+d[d$card == 'no', tail(.SD, 5)]
+```
+
+
+- Average number of major CCs held for people with top 10 income
+
+```{r}
+require(data.table)
+d <- data.table(df, key="income")
+mean(d[, tail(.SD, 10),]$majorcards)
+```
