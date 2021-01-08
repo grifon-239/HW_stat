@@ -60,10 +60,32 @@ active: Number of active credit accounts.
 
 
 ```{r}
-par(mfrow=c(1,2))
-hist(df$age, col= "light green", main = "Age", xlab = "Age")
-hist(df$income, col= "light green", main = "Income (in USD 10000)", xlab = "Income")
-title("probability", line = -1, outer = TRUE)
+library(ggplot2)
+
+
+ggplot(data = df, aes(x = age)) +
+  geom_histogram(fill = "yellowgreen", 
+                 color = "black")+ 
+  geom_vline(xintercept = median(df$age), 
+             color = "red",
+             lty = 2)
+
+ggplot(data = df, aes(x = income)) +
+  geom_histogram(fill = "yellowgreen", 
+                 color = "black")+ 
+  geom_vline(xintercept = median(df$income), 
+             color = "red",
+             lty = 2)
+
+
+ggplot(data = df, aes(y = age)) +
+  geom_boxplot(fill = "yellowgreen", 
+                 color = "black")
+
+ggplot(data = df, aes(y = income)) +
+  geom_boxplot(fill = "yellowgreen", 
+                 color = "black")
+
 ```
 
 Полученные расспределения можно назвать унимодальными.
@@ -72,8 +94,18 @@ title("probability", line = -1, outer = TRUE)
 
 2. Опишите структуру трат
 ```{r}
-plot(income~majorcards, data = df)
-plot(income~expenditure, data = df)
+
+ggplot(data = df, aes(x = income, y = expenditure)) +
+geom_point() + 
+labs(title = "income VS expenditure", 
+     x = "income", 
+     y = "expenditure")
+
+ggplot(data = df, aes(x = income, y = majorcards)) +
+geom_point() + 
+labs(title = "income VS majorcards", 
+     x = "income", 
+     y = "majorcards")
 ```
 
 
@@ -90,6 +122,7 @@ df_cop <- na.omit(df)
 ```
 
 ```{r}
+library(psych)
 df_for_cor <- data.frame( "reports"    = df$reports, 
                           "age"        = df$age, 
                           "income"     = df$income,
@@ -112,8 +145,13 @@ pairs.panels(df_for_cor,
 
 
 ```{r}
-fit.full <- glm(card ~ reports + income + majorcards + dependents + selfemp, data = df_cop, family = binomial())
+library(dplyr)
+
+df_cop$card <- as.factor(df_cop$card)
+fit.full <- glm(card ~ reports + income + majorcards + dependents + selfemp, data = df_cop, family = binomial)
 summary(fit.full)
+
+
 ```
 
 ```{r}
