@@ -61,12 +61,11 @@ active: Number of active credit accounts.
 
 
 ```{r}
-#install.packages(lubridate)
+install.packages(lubridate)
 library(lubridate)
 
 now <- as.Date("2000-01-01")
-
-df$days <-as.numeric( (now %m+% months(df$months)) - now)
+df <- mutate(df, days = as.numeric( (now %m+% months(df$months)) - now))
 
 head(df)
 ```
@@ -77,7 +76,8 @@ head(df)
 inPerFamMem in USD 10,000
 
 ```{r}
-df$inPerFamMem <- df$income/(df$dependents + 1)
+
+df <- mutate(df, inPerFamMem = df$income/(df$dependents + 1))
 
 head(df)
 ```
