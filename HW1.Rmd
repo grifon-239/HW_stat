@@ -61,8 +61,10 @@ active: Number of active credit accounts.
 
 
 ```{r}
-install.packages(lubridate)
+#install.packages("lubridate")
+#install.packages("dplyr")
 library(lubridate)
+library(dplyr)
 
 now <- as.Date("2000-01-01")
 df <- mutate(df, days = as.numeric( (now %m+% months(df$months)) - now))
@@ -98,8 +100,10 @@ wilcox.test(df$inPerFamMem[df$selfemp == 'yes'], df$inPerFamMem[df$selfemp == 'n
 Определим собственый критерий, как средний доход на члена семьи больше среднего и владение собственным домом:
 ```{r}
 library(plyr)
-df$myCrit<- as.factor((df$inPerFamMem > mean(df$inPerFamMem)) & (df$owner == 'yes'))
-df$myCrit<-revalue(df$myCrit, c("FALSE"= 0, "TRUE"=1))
+
+df <- mutate(df, myCrit = as.factor((df$inPerFamMem > mean(df$inPerFamMem)) & (df$owner == 'yes')))
+df <- mutate(df, myCrit = revalue(df$myCrit, c("FALSE"= 0, "TRUE"=1)))
+
 head(df)
 
 ```
