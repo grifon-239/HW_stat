@@ -63,6 +63,7 @@ active: Number of active credit accounts.
 - Add column with income per family member (not the number of dependents!) inPerFamMem in USD 10,000
 ```{r}
 library(lubridate)
+library(dplyr)
 
 now <- as.Date("2000-01-01")
 df <- mutate(df, days = as.numeric( (now %m+% months(months)) - now),
@@ -177,3 +178,131 @@ df_ <- head(arrange(df, desc(income)), 10)
 mean(df_$majorcards)
 
 ```
+
+## Task 2
+
+1. Опишите распределения данных по возрасту, полу и уровню дохода
+
+
+К сожалению в данных нету информации про пол претендентов, поэтому опишем распределения данных только по возрасту и уровню дохода.
+
+
+```{r}
+
+ggplot(data = df, aes(x = age)) +
+  geom_histogram(fill = "yellowgreen", 
+                 color = "black")+ 
+  geom_vline(xintercept = median(df$age), 
+             color = "red",
+             lty = 2)
+
+ggplot(data = df, aes(x = income)) +
+  geom_histogram(fill = "yellowgreen", 
+                 color = "black")+ 
+  geom_vline(xintercept = median(df$income), 
+             color = "red",
+             lty = 2)
+
+
+ggplot(data = df, aes(y = age)) +
+  geom_boxplot(fill = "yellowgreen", 
+                 color = "black")
+
+ggplot(data = df, aes(y = income)) +
+  geom_boxplot(fill = "yellowgreen", 
+                 color = "black")
+
+```
+
+
+2. Опишите структуру трат
+Так как распределения не симметричны, прологарифмируем данные income и expenditure:
+
+```{r}
+
+df <- mutate(df, logIncome = log(income),
+                 logExp = log(expenditure),
+                 logShare = log(share))
+
+
+ggplot(data = df, aes(x = logExp)) +
+  geom_histogram(fill = "yellowgreen", 
+                 color = "black")
+
+
+ggplot(data = df, aes(x = logIncome)) +
+  geom_histogram(fill = "yellowgreen", 
+                 color = "black")
+
+ggplot(data = df, aes(y = logExp)) +
+  geom_boxplot(fill = "yellowgreen", 
+                 color = "black")
+
+
+ggplot(data = df, aes(y = logIncome)) +
+  geom_boxplot(fill = "yellowgreen", 
+                 color = "black")
+
+
+```
+
+
+```{r}
+library(psych)
+df_for_cor <- data.frame( "reports"    = df$reports, 
+                          "age"        = df$age, 
+                          "income"     = df$logIncome,
+                          "share"      = df$logShare,
+                          "expen"      = df$expenditure,
+                          "depen"      = df$dependents,
+                          "months"     = df$months,
+                          "majorcards" = df$majorcards,
+                          "active"     = df$active)
+
+pairs.panels(df_for_cor, 
+             method = "pearson", 
+             hist.col = "orange",
+             density = TRUE,
+             ellipses = FALSE,
+             lm = TRUE,
+             stars = TRUE
+             )
+
+ggplot(data = df, aes(x = logIncome, y = logExp)) +
+geom_point() + 
+labs(title = "Log income VS Log expenditure", 
+     x = "log income", 
+     y = "log expenditure")
+
+```
+
+
+```{r}
+ggplot(data = df, aes(x = logIncome, y = logShare)) +
+geom_point() + 
+labs(title = "Log income VS Log share", 
+     x = "log income", 
+     y = "log share")
+
+
+ggplot(data = df, aes(x = age, y = logIncome)) +
+geom_point() + 
+labs(title = "Log income VS Log share", 
+     x = "age", 
+     y = "log income")
+```
+
+
+3. Опишите зависимость, выдана карта, или нет от других признаков
+
+
+```{r}
+
+df$card <- revalue(df$card, c("yes" = 2, "no" = 1))
+df$card <- as.numeric(df$card)
+
+my_cols <- c("light blue", "orange")
+pairs(~ reports + logIncome + majorcards + dependents + months + logShare, data = df, col = my_cols[df$card], pch = 19,  cex = 0.5, oma=c(3,3,6,8))
+```
+
+
