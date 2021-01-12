@@ -64,6 +64,7 @@ active: Number of active credit accounts.
 ```{r}
 library(lubridate)
 library(dplyr)
+library(plyr)
 
 now <- as.Date("2000-01-01")
 df <- mutate(df, days = as.numeric( (now %m+% months(months)) - now),
@@ -114,12 +115,13 @@ scopes = quantile(df$logIncome, c(0.3255,0.6745))
 Разделим по нашему критерию, где "3" - высокий достаток, "2" - средний, "1" - низкий.
 
 ```{r}
-library(plyr); library(dplyr)
 
-df <- mutate(df, myCrit = cut(logIncome, c(-2, scopes[[1]], scopes[[2]], 3)))
-df$myCrit <- revalue(df$myCrit, c("(-2,0.896]" = 1, "(0.896,1.25]" = 2, 
-                                "(1.25,3]" = 3))
-df <- select(df, -c(15))
+df <- df %>% mutate(myCrit = case_when(
+                                  (logIncome >= scopes[[2]] ~ "3"), 
+                                  (logIncome >= scopes[[1]] & logIncome < scopes[[2]] ~ "2"),
+                                  (logIncome < scopes[[1]]  ~ "1"),
+                                  TRUE ~ "NA"))
+df <- mutate(df, myCrit = as.factor(myCrit))
 head(df)
 ```
 
@@ -148,15 +150,15 @@ write.table(subset, file = "myData.txt", sep = ":",
 
 
 ```{r}
-mean(df$dependents[df$owner == "no"])
+owner_no <- filter(df, owner == "no") 
+summarise(owner_no, mean(dependents))
 ```
 
 
 - Average age in each income groups (use grouping variable defined in 1.)
 ```{r}
-aggregate(x = df$age,                
-          by = list(df$myCrit),              
-          FUN = mean)
+by_age <- df %>% group_by(myCrit) %>% summarize_all("mean")
+by_age$age
 ```
 
 
